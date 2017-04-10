@@ -34,12 +34,12 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="IRC.cs" />
     <Compile Include="Sender.cs" />
-    <Compile Include="Util.cs" />
     <Compile Include="Channel.cs" />
     <Compile Include="ChannelUser.cs" />
     <Compile Include="Exceptions\AlreadyConnectedException.cs" />
     <Compile Include="Exceptions\ArgumentRegexException.cs" />
     <Compile Include="Exceptions\NotConnectedException.cs" />
+    <Compile Include="Exceptions\InvalidChannelNameException.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Exceptions\" />

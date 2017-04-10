@@ -123,6 +123,16 @@ namespace IRC_Library
             }
         }
 
+        public void Quit(string reason = null)
+        {
+            if (reason == null)
+                SendRawMessage("QUIT");
+            else
+                SendRawMessage($"QUIT :{reason}");
+
+            Close();
+        }
+
         public void Close()
         {
             if (!Connected)
@@ -162,5 +172,179 @@ namespace IRC_Library
             if (RawMessageSend != null)
                 RawMessageSend(message);
         }
+
+
+
+        #region Channel
+
+        public static bool IsChannelName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return false;
+            if (name.Length > 50)
+                return false;
+            if (name.IndexOfAny(new char[] { (char)7, ' ', ',' }) != -1)
+                return false;
+            var ch = name[0];
+            switch (ch)
+            {
+                case '&':
+                case '#':
+                case '+':
+                case '!':
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public void JoinChannel(string channel)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            SendRawMessage($"JOIN {channel}");
+        }
+        public void LeaveChannel(string channel)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            SendRawMessage($"PART {channel}");
+        }
+
+        #endregion
+
+        #region Channel Topic
+
+        public void ChangeChannelTopic(string channel, string newTopic)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            if (string.IsNullOrWhiteSpace(newTopic))
+                throw new ArgumentNullException(nameof(newTopic));
+
+            SendRawMessage($"TOPIC {channel} :{newTopic}");
+        }
+        public void RemoveChannelTopic(string channel)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            SendRawMessage($"TOPIC {channel} :");
+        }
+        public void RequestChannelTopic(string channel)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            SendRawMessage($"TOPIC {channel}");
+        }
+        public void SetChannelTopicEditable(string channel, bool editable)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            SendRawMessage(editable ? $"MODE {channel} -t" : $"MODE {channel} +t");
+        }
+
+        #endregion
+
+        #region Channel Invites
+
+        public void SetChannelInviteOnly(IRC lib, string channel, bool inviteOnly)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            lib.SendRawMessage(inviteOnly ? $"MODE {channel} +t" : $"MODE {channel} -t");
+        }
+        public void InviteToChannel(IRC lib, string channel, string nick)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            lib.SendRawMessage($"INVITE {nick} {channel}");
+        }
+
+        public void AllowJoinOnInviteOnly(IRC lib, string channel, string nick, bool allow = true)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            lib.SendRawMessage(allow ? $"MODE {channel} +I {nick}" : $"MODE {channel} -I {nick}");
+        }
+
+        #endregion
+
+        #region Channel Bad Words Filter
+
+        public void EnableBadWordsFilter(IRC lib, string channel)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            lib.SendRawMessage($"MODE {channel} +G");
+        }
+
+        public void DisableBadWordsFilter(IRC lib, string channel)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            lib.SendRawMessage($"MODE {channel} -G");
+        }
+
+        #endregion
+
+        #region Channel User Permissions
+
+        public void AddChannelOperator(string channel, string nick)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            SendRawMessage($"MODE {channel} +o {nick}");
+        }
+        public void RemoveChannelOperator(string channel, string nick)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            SendRawMessage($"MODE {channel} -o {nick}");
+        }
+
+        public void AddChannelHalfOperator(string channel, string nick)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            SendRawMessage($"MODE {channel} +h {nick}");
+        }
+        public void RemoveChannelHalfOperator(string channel, string nick)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            SendRawMessage($"MODE {channel} -h {nick}");
+        }
+
+        public void AddChannelVoice(string channel, string nick)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            SendRawMessage($"MODE {channel} +v {nick}");
+        }
+        public void RemoveChannelVoice(string channel, string nick)
+        {
+            if (!IsChannelName(channel))
+                throw new InvalidChannelNameException(channel);
+
+            SendRawMessage($"MODE {channel} -v {nick}");
+        }
+
+        #endregion
     }
 }
