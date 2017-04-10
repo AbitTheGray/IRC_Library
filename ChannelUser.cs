@@ -4,11 +4,14 @@ namespace IRC_Library
 {
     public class ChannelUser
     {
-        public ChannelUser(IRC library, Channel channel, string username)
+        internal ChannelUser(IRC library, Channel channel, string username)
         {
             if (library == null)
-                throw new ArgumentNullException("library");
+                throw new ArgumentNullException(nameof(library));
             this.Library = library;
+
+            this.Channel = channel;
+            this.Username = username;
         }
 
         public IRC Library
@@ -40,9 +43,9 @@ namespace IRC_Library
             set
             {
                 if (value)
-                    Util.AddChannelOperator(Library, Channel.ToString(), Username);
+                    Library.AddChannelOperator(Channel.ToString(), Username);
                 else
-                    Util.RemoveChannelOperator(Library, Channel.ToString(), Username);
+                    Library.RemoveChannelOperator(Channel.ToString(), Username);
             }
         }
 
@@ -57,9 +60,9 @@ namespace IRC_Library
             set
             {
                 if (value)
-                    Util.AddChannelHalfOperator(Library, Channel.ToString(), Username);
+                    Library.AddChannelHalfOperator(Channel.ToString(), Username);
                 else
-                    Util.RemoveChannelHalfOperator(Library, Channel.ToString(), Username);
+                    Library.RemoveChannelHalfOperator(Channel.ToString(), Username);
             }
         }
 
@@ -74,9 +77,9 @@ namespace IRC_Library
             set
             {
                 if (value)
-                    Util.AddChannelVoice(Library, Channel.ToString(), Username);
+                    Library.AddChannelVoice(Channel.ToString(), Username);
                 else
-                    Util.RemoveChannelVoice(Library, Channel.ToString(), Username);
+                    Library.RemoveChannelVoice(Channel.ToString(), Username);
             }
         }
     }

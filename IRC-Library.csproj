@@ -34,12 +34,15 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="IRC.cs" />
     <Compile Include="Sender.cs" />
-    <Compile Include="ArgumentRegexException.cs" />
-    <Compile Include="NotConnectedException.cs" />
-    <Compile Include="AlreadyConnectedException.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="Channel.cs" />
     <Compile Include="ChannelUser.cs" />
+    <Compile Include="Exceptions\AlreadyConnectedException.cs" />
+    <Compile Include="Exceptions\ArgumentRegexException.cs" />
+    <Compile Include="Exceptions\NotConnectedException.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Exceptions\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -15,12 +15,12 @@ namespace IRC_Library
 
             MessageReceived += (sender, id, message) =>
             {
-                if (id.Equals("PRIVMSG") && PrivateMessageReceived != null)
+                if (id.Equals("PRIVMSG", StringComparison.InvariantCultureIgnoreCase) && PrivateMessageReceived != null)
                 {
                     int index = message.IndexOf(' ');
                     PrivateMessageReceived(sender, message.Substring(0, index), message.Substring(index + 1));
                 }
-                if (id.Equals("NOTICE") && PrivateMessageReceived != null)
+                if (id.Equals("NOTICE", StringComparison.InvariantCultureIgnoreCase) && PrivateMessageReceived != null)
                 {
                     int index = message.IndexOf(' ');
                     NoticeMessageReceived(sender, message.Substring(0, index), message.Substring(index + 1));
@@ -29,7 +29,7 @@ namespace IRC_Library
 
             RawMessageReceived += (message) =>
             {
-                if (message.StartsWith("PING "))
+                if (message.StartsWith("PING ", StringComparison.InvariantCultureIgnoreCase))
                     SendRawMessage("PONG " + message.Substring(5));
             };
         }
@@ -50,22 +50,24 @@ namespace IRC_Library
         private StreamReader _reader = null;
         private StreamWriter _writer = null;
 
+        private Thread t_listener = null;
+
         public void Connect(string nick, string username, string realName, string password = null)
         {
             if (Connected)
                 throw new AlreadyConnectedException();
 
             if (!Regex.IsMatch(nick, "[A-Za-z0-9]*"))
-                throw new ArgumentException("nick");
+                throw new ArgumentException(nameof(nick));
             if (!Regex.IsMatch(username, "[A-Za-z0-9]*"))
-                throw new ArgumentException("username");
+                throw new ArgumentException(nameof(username));
 
             _client = new TcpClient();
             _client.Connect(EndPoint);
 
             _reader = new StreamReader(_client.GetStream());
 
-            Thread t = new Thread(() =>
+            t_listener = new Thread(() =>
             {
                 while (Connected)
                 {
@@ -76,7 +78,7 @@ namespace IRC_Library
                             continue;
                         if (RawMessageReceived != null)
                             RawMessageReceived(line);
-                        if (line.StartsWith("ERROR "))
+                        if (line.StartsWith("ERROR ", StringComparison.InvariantCultureIgnoreCase))
                             Close();
 
                         if (MessageReceived == null)
@@ -104,7 +106,7 @@ namespace IRC_Library
                     }
                 }
             });
-            t.Start();
+            t_listener.Start();
             _writer = new StreamWriter(_client.GetStream());
 
             if (password != null)

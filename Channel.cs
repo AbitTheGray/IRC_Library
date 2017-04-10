@@ -5,14 +5,14 @@ namespace IRC_Library
 {
     public class Channel
     {
-        public Channel(IRC library, string name)
+        internal Channel(IRC library, string name)
         {
             if (library == null)
                 throw new ArgumentNullException(nameof(library));
             this.Library = library;
 
-            if (name.Length == 0 && name[0] != '#')
-                throw new ArgumentRegexException("name");
+            if (name.Length == 0 || name[0] != '#')
+                throw new ArgumentRegexException(nameof(name), "^(#)");
             this._name = name;
         }
 

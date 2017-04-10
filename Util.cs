@@ -4,9 +4,12 @@ namespace IRC_Library
 {
     public static class Util
     {
-        public static void Quit(this IRC lib, string reason = "Bye cruel world.")
+        public static void Quit(this IRC lib, string reason = null)
         {
-            lib.SendRawMessage($"QUIT :{reason}");
+            if (reason == null)
+                lib.SendRawMessage("QUIT");
+            else
+                lib.SendRawMessage($"QUIT :{reason}");
         }
 
         #region Channel
@@ -34,7 +37,7 @@ namespace IRC_Library
                 channel = '#' + channel;
 
             if (string.IsNullOrWhiteSpace(newTopic))
-                throw new ArgumentNullException("newTopic");
+                throw new ArgumentNullException(nameof(newTopic));
 
             lib.SendRawMessage($"TOPIC {channel} :{newTopic}");
         }

@@ -4,7 +4,7 @@ namespace IRC_Library
 {
     public class AlreadyConnectedException : Exception
     {
-        public AlreadyConnectedException()
+        public AlreadyConnectedException() : base("Already connected exception")
         {
         }
     }
