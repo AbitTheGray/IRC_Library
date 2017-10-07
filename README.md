@@ -16,7 +16,7 @@ irc.RawMessageReceived += Console.WriteLine;
 Console.CancelKeyPress += (sender, e) =>
 {
     if (irc.Connected)
-        irc.Close();
+        irc.Quit();
     Environment.Exit(1);
 };
 

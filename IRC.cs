@@ -40,6 +40,10 @@ namespace IRC_Library
         {
         }
 
+        /// <summary>
+        /// Address of remote server.
+        /// </summary>
+        /// <value>The end point.</value>
         public IPEndPoint EndPoint
         {
             get;
@@ -52,15 +56,23 @@ namespace IRC_Library
 
         private Thread t_listener = null;
 
+        /// <summary>
+        /// Connect to Server using specified nick, username, real name and possibly with password.
+        /// The Server is specified in constructor.
+        /// </summary>
+        /// <param name="nick">Nick.</param>
+        /// <param name="username">Username.</param>
+        /// <param name="realName">Real name.</param>
+        /// <param name="password">Password (optional).</param>
         public void Connect(string nick, string username, string realName, string password = null)
         {
             if (Connected)
                 throw new AlreadyConnectedException();
 
-            if (!Regex.IsMatch(nick, "[A-Za-z0-9]*"))
-                throw new ArgumentException(nameof(nick));
-            if (!Regex.IsMatch(username, "[A-Za-z0-9]*"))
-                throw new ArgumentException(nameof(username));
+            if (!IsValidNickname(nick))
+                throw new ArgumentRegexException(nameof(nick), "^[a-z_\\-\\[\\]\\^\\{}\\|`\\\\][a-z0-9_\\-\\[\\]\\^\\{}\\|`\\\\]*$");
+            if (!Regex.IsMatch(username, "^[a-z_\\-\\[\\]\\^\\{}\\|`\\\\][a-z0-9_\\-\\[\\]\\^\\{}\\|`\\\\]*$"))
+                throw new ArgumentRegexException(nameof(username), "^[a-z_\\-\\[\\]\\^\\{}\\|`\\\\][a-z0-9_\\-\\[\\]\\^\\{}\\|`\\\\]*$");
 
             _client = new TcpClient();
             _client.Connect(EndPoint);
@@ -115,6 +127,9 @@ namespace IRC_Library
             SendRawMessage($"USER {username} 8 * :{realName}");
         }
 
+        /// <summary>
+        /// Informs you whenever you are connected to Server.
+        /// </summary>
         public bool Connected
         {
             get
@@ -123,6 +138,10 @@ namespace IRC_Library
             }
         }
 
+        /// <summary>
+        /// Quit IRC and close connection.
+        /// </summary>
+        /// <param name="reason">Reason of quitting. The message is sent to other clients.</param>
         public void Quit(string reason = null)
         {
             if (reason == null)
@@ -133,10 +152,13 @@ namespace IRC_Library
             Close();
         }
 
+        /// <summary>
+        /// Close IRC connection.
+        /// </summary>
         public void Close()
         {
             if (!Connected)
-                throw new NotConnectedException();
+                return;
 
             if (ConnectionClosed != null)
                 ConnectionClosed();
@@ -174,10 +196,21 @@ namespace IRC_Library
         }
 
 
+        public delegate void ChannelNamesDelegate(Channel channel, string[] names);
+        public event ChannelNamesDelegate ChannelNames;
+
+        public delegate void ChannelJoinDelegate(Channel channel, string user);
+        public event ChannelJoinDelegate ChannelJoin;
+        public event ChannelJoinDelegate ChannelJoinSelf;
+        public event ChannelJoinDelegate ChannelJoinOther;
 
         #region Channel
 
-        public static bool IsChannelName(string name)
+        /// <summary>
+        /// Checks validity of channel name
+        /// </summary>
+        /// <param name="name">Name of the channel.</param>
+        public static bool IsValidChannelName(string name)
         {
             if (string.IsNullOrEmpty(name))
                 return false;
@@ -197,17 +230,28 @@ namespace IRC_Library
                     return false;
             }
         }
+        public static bool IsValidNickname(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return false;
+            /*
+            //While the maximum length is limited to nine characters, clients SHOULD accept longer strings as they may become used in future evolutions of the protocol.
+            if (name.Length > 9)
+                return false;
+            */
+            return Regex.IsMatch(name, "^[a-z_\\-\\[\\]\\^\\{}\\|`\\\\][a-z0-9_\\-\\[\\]\\^\\{}\\|`\\\\]*$");
+        }
 
         public void JoinChannel(string channel)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             SendRawMessage($"JOIN {channel}");
         }
         public void LeaveChannel(string channel)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             SendRawMessage($"PART {channel}");
@@ -219,7 +263,7 @@ namespace IRC_Library
 
         public void ChangeChannelTopic(string channel, string newTopic)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             if (string.IsNullOrWhiteSpace(newTopic))
@@ -229,25 +273,33 @@ namespace IRC_Library
         }
         public void RemoveChannelTopic(string channel)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             SendRawMessage($"TOPIC {channel} :");
         }
         public void RequestChannelTopic(string channel)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             SendRawMessage($"TOPIC {channel}");
         }
         public void SetChannelTopicEditable(string channel, bool editable)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             SendRawMessage(editable ? $"MODE {channel} -t" : $"MODE {channel} +t");
         }
+
+        //332 <self_nick> <channel> :<topic>
+        public delegate void TopicChangedDelegate(Channel channel, string topic);
+        public event TopicChangedDelegate TopicChanged;
+
+        //333 <self_nick> <channel> <user> <time>
+        public delegate void TopicChangedTimeDelegate(Channel channel, ChannelUser user, string topic);
+        public event TopicChangedTimeDelegate TopicChangedTime;
 
         #endregion
 
@@ -255,14 +307,14 @@ namespace IRC_Library
 
         public void SetChannelInviteOnly(IRC lib, string channel, bool inviteOnly)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             lib.SendRawMessage(inviteOnly ? $"MODE {channel} +t" : $"MODE {channel} -t");
         }
         public void InviteToChannel(IRC lib, string channel, string nick)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             lib.SendRawMessage($"INVITE {nick} {channel}");
@@ -270,7 +322,7 @@ namespace IRC_Library
 
         public void AllowJoinOnInviteOnly(IRC lib, string channel, string nick, bool allow = true)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             lib.SendRawMessage(allow ? $"MODE {channel} +I {nick}" : $"MODE {channel} -I {nick}");
@@ -282,7 +334,7 @@ namespace IRC_Library
 
         public void EnableBadWordsFilter(IRC lib, string channel)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             lib.SendRawMessage($"MODE {channel} +G");
@@ -290,7 +342,7 @@ namespace IRC_Library
 
         public void DisableBadWordsFilter(IRC lib, string channel)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             lib.SendRawMessage($"MODE {channel} -G");
@@ -302,14 +354,14 @@ namespace IRC_Library
 
         public void AddChannelOperator(string channel, string nick)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             SendRawMessage($"MODE {channel} +o {nick}");
         }
         public void RemoveChannelOperator(string channel, string nick)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             SendRawMessage($"MODE {channel} -o {nick}");
@@ -317,14 +369,14 @@ namespace IRC_Library
 
         public void AddChannelHalfOperator(string channel, string nick)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             SendRawMessage($"MODE {channel} +h {nick}");
         }
         public void RemoveChannelHalfOperator(string channel, string nick)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             SendRawMessage($"MODE {channel} -h {nick}");
@@ -332,14 +384,14 @@ namespace IRC_Library
 
         public void AddChannelVoice(string channel, string nick)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             SendRawMessage($"MODE {channel} +v {nick}");
         }
         public void RemoveChannelVoice(string channel, string nick)
         {
-            if (!IsChannelName(channel))
+            if (!IsValidChannelName(channel))
                 throw new InvalidChannelNameException(channel);
 
             SendRawMessage($"MODE {channel} -v {nick}");

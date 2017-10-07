@@ -44,5 +44,8 @@
   <ItemGroup>
     <Folder Include="Exceptions\" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
